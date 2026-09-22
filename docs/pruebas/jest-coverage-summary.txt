@@ -1,0 +1,43 @@
+
+> reddona@1.0.0 test:coverage
+> jest --coverage --runInBand
+
+PASS tests/donors.test.js
+PASS tests/auth.test.js
+PASS tests/bootstrap.test.js
+PASS tests/userStore.test.js
+PASS tests/middleware.test.js
+PASS tests/jwt.test.js
+PASS tests/errorHandler.test.js
+PASS tests/donorStore.test.js
+---------------------|---------|----------|---------|---------|-------------------
+File                 | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+---------------------|---------|----------|---------|---------|-------------------
+All files            |   97.47 |    90.14 |     100 |   97.36 |                   
+ src                 |   95.23 |       50 |     100 |      95 |                   
+  app.js             |   95.23 |       50 |     100 |      95 | 17                
+ src/config          |     100 |       50 |     100 |     100 |                   
+  env.js             |     100 |       50 |     100 |     100 | 4-6               
+ src/controllers     |   94.91 |    93.75 |     100 |   94.91 |                   
+  authController.js  |   90.62 |       80 |     100 |   90.62 | 17,35,42          
+  donorController.js |     100 |      100 |     100 |     100 |                   
+ src/middleware      |   95.23 |    92.85 |     100 |   95.23 |                   
+  auth.js            |   94.11 |       90 |     100 |   94.11 | 23                
+  errorHandler.js    |     100 |      100 |     100 |     100 |                   
+ src/models          |     100 |      100 |     100 |     100 |                   
+  bootstrap.js       |     100 |      100 |     100 |     100 |                   
+  donorStore.js      |     100 |      100 |     100 |     100 |                   
+  userStore.js       |     100 |      100 |     100 |     100 |                   
+ src/routes          |     100 |      100 |     100 |     100 |                   
+  authRoutes.js      |     100 |      100 |     100 |     100 |                   
+  donorRoutes.js     |     100 |      100 |     100 |     100 |                   
+ src/utils           |     100 |      100 |     100 |     100 |                   
+  jwt.js             |     100 |      100 |     100 |     100 |                   
+  validators.js      |     100 |      100 |     100 |     100 |                   
+---------------------|---------|----------|---------|---------|-------------------
+
+Test Suites: 8 passed, 8 total
+Tests:       47 passed, 47 total
+Snapshots:   0 total
+Time:        7.023 s
+Ran all test suites.
