@@ -59,6 +59,9 @@ jobs:
         env:
           JWT_SECRET: test-secret
           PORT: 3000
+          # Origen restringido a proposito, para validar en el escaneo que el
+          # allowlist de CORS efectivamente rechaza origenes no autorizados.
+          CORS_ORIGIN: https://app.reddona.org
 
       - name: OWASP ZAP Baseline Scan
         run: |
@@ -130,6 +133,7 @@ jobs:
             -e JWT_SECRET=staging-secret \
             -e ADMIN_BOOTSTRAP_EMAIL=admin@reddona.org \
             -e ADMIN_BOOTSTRAP_PASSWORD=StagingAdmin123! \
+            -e CORS_ORIGIN=https://app.reddona.org \
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
           sleep 5
 
