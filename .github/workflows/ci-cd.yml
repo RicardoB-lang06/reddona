@@ -80,6 +80,105 @@ jobs:
           name: zap-report
           path: zap-report/
 
+  code-quality:
+    name: Analisis de calidad de codigo (SonarQube)
+    runs-on: ubuntu-latest
+    needs: test
+    services:
+      sonarqube:
+        image: sonarqube:community
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/api/system/status"
+          --health-interval 15s
+          --health-timeout 10s
+          --health-retries 20
+          --health-start-period 60s
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias y generar cobertura (lcov)
+        run: npm ci && npm run test:coverage
+        env:
+          JWT_SECRET: test-secret
+          NODE_ENV: test
+
+      - name: Esperar a que SonarQube este operativo
+        id: wait_sonar
+        continue-on-error: true
+        run: |
+          for i in $(seq 1 30); do
+            status=$(curl -s http://localhost:9000/api/system/status || true)
+            echo "intento $i: $status"
+            if echo "$status" | grep -q '"status":"UP"'; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "SonarQube no quedo operativo a tiempo"
+          exit 1
+
+      - name: Configurar credenciales y generar token de analisis
+        id: sonar_token
+        if: steps.wait_sonar.outcome == 'success'
+        continue-on-error: true
+        run: |
+          curl -s -u admin:admin -X POST "http://localhost:9000/api/users/change_password" \
+            --data-urlencode "login=admin" \
+            --data-urlencode "previousPassword=admin" \
+            --data-urlencode "password=ReddonaSonar123!"
+          RESP=$(curl -s -u admin:ReddonaSonar123! -X POST "http://localhost:9000/api/user_tokens/generate" \
+            --data-urlencode "name=ci-$(date +%s)")
+          echo "$RESP"
+          TOKEN=$(echo "$RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+          if [ -z "$TOKEN" ]; then exit 1; fi
+          echo "SONAR_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Analisis con sonar-scanner
+        id: sonar_scan
+        if: steps.sonar_token.outcome == 'success'
+        continue-on-error: true
+        run: |
+          docker run --rm --network host \
+            -e SONAR_HOST_URL=http://localhost:9000 \
+            -e SONAR_TOKEN="${{ env.SONAR_TOKEN }}" \
+            -v "$(pwd):/usr/src" \
+            sonarsource/sonar-scanner-cli:latest \
+            -Dsonar.projectKey=reddona \
+            -Dsonar.projectName=RedDona \
+            -Dsonar.sources=src \
+            -Dsonar.tests=tests \
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+            -Dsonar.exclusions=node_modules/**
+
+      - name: Esperar el computo del quality gate
+        if: steps.sonar_scan.outcome == 'success'
+        run: sleep 15
+
+      - name: Exportar metricas de SonarQube
+        if: steps.sonar_scan.outcome == 'success'
+        continue-on-error: true
+        run: |
+          mkdir -p docs/calidad
+          curl -s -u "${{ env.SONAR_TOKEN }}:" \
+            "http://localhost:9000/api/measures/component?component=reddona&metricKeys=bugs,vulnerabilities,code_smells,sqale_index,sqale_rating,duplicated_lines_density,coverage,ncloc,complexity" \
+            -o docs/calidad/sonarqube-metrics.json
+          cat docs/calidad/sonarqube-metrics.json
+
+      - name: Publicar metricas de SonarQube
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sonarqube-metrics
+          path: docs/calidad/sonarqube-metrics.json
+          if-no-files-found: warn
+
   build-and-push:
     name: Construir y publicar imagen Docker
     runs-on: ubuntu-latest
