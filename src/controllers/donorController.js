@@ -1,5 +1,16 @@
 const donorStore = require('../models/donorStore');
 
+const EDITABLE_FIELDS = ['nombre', 'email', 'telefono', 'tipoRecurso', 'ubicacion'];
+
+function pickDefinedFields(source, fields) {
+  return fields.reduce((changes, field) => {
+    if (source[field] !== undefined) {
+      changes[field] = source[field];
+    }
+    return changes;
+  }, {});
+}
+
 function createDonor(req, res) {
   const { nombre, email, telefono, tipoRecurso, ubicacion } = req.body;
 
@@ -42,14 +53,8 @@ function updateDonor(req, res) {
     return res.status(403).json({ error: 'No tienes permisos para editar este registro' });
   }
 
-  const { nombre, email, telefono, tipoRecurso, ubicacion } = req.body;
-  const updated = donorStore.update(req.params.id, {
-    ...(nombre !== undefined && { nombre }),
-    ...(email !== undefined && { email }),
-    ...(telefono !== undefined && { telefono }),
-    ...(tipoRecurso !== undefined && { tipoRecurso }),
-    ...(ubicacion !== undefined && { ubicacion }),
-  });
+  const changes = pickDefinedFields(req.body, EDITABLE_FIELDS);
+  const updated = donorStore.update(req.params.id, changes);
   return res.json({ donor: updated });
 }
 

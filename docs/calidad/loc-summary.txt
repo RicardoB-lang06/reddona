@@ -1,0 +1,9 @@
+--- LOC por carpeta ---
+src/config: 7 lineas
+src/controllers: 125 lineas
+src/middleware: 42 lineas
+src/models: 143 lineas
+src/routes: 49 lineas
+src/utils: 46 lineas
+src (total): 457 lineas
+tests (total): 535 lineas
